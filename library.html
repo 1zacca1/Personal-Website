@@ -24,7 +24,7 @@
   <main>
     <section class="page-hero">
       <h1>Library</h1>
-      <p class="tagline">Books I've read</p>
+      <p class="tagline">Some books I've read</p>
     </section>
 
     <section>
@@ -60,6 +60,13 @@
           /\b\d+(st|nd|rd|th)\s+edition\b/i,
         ];
 
+        const excludedTitles = [
+          /hillbilly\s+elegy/i,
+          /wonderboy/i,
+          /financial\s+statement\s+analysis/i,
+          /48\s+laws\s+of\s+power/i,
+        ];
+
         const filtered = allItems.filter(item => {
           const cover = item.querySelector('book_large_image_url')?.textContent || '';
           const title = item.querySelector('title')?.textContent || '';
@@ -67,6 +74,8 @@
           if (!cover || cover.includes('nophoto') || cover.includes('nocover') || cover.trim() === '') return false;
           // Exclude school/textbook titles
           if (schoolKeywords.some(re => re.test(title))) return false;
+          // Exclude specific titles
+          if (excludedTitles.some(re => re.test(title))) return false;
           return true;
         }).slice(0, 40);
 
