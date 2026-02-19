@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Library — Zacarias Moreira</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <header>
+    <nav>
+      <a href="/" class="logo">Zacarias Moreira</a>
+      <ul>
+        <li><a href="/">About</a></li>
+        <li><a href="/projects.html">Projects</a></li>
+        <li><a href="/library.html" class="active">Library</a></li>
+        <li><a href="/blog.html">Blog</a></li>
+        <li><a href="/contact.html">Contact</a></li>
+      </ul>
+    </nav>
+  </header>
+
+  <main>
+    <section class="page-hero">
+      <h1>Library</h1>
+      <p class="tagline">Books I've read</p>
+    </section>
+
+    <section>
+      <div class="book-grid" id="books-container">
+        <p class="loading">Loading books&hellip;</p>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <p>&copy; 2026 Zacarias Moreira</p>
+  </footer>
+
+  <script>
+    async function loadBooks() {
+      const container = document.getElementById('books-container');
+      try {
+        const res = await fetch('/api/books');
+        if (!res.ok) throw new Error('fetch failed');
+        const text = await res.text();
+        const parser = new DOMParser();
+        const xml = parser.parseFromString(text, 'text/xml');
+        const items = Array.from(xml.querySelectorAll('item')).slice(0, 24);
+        if (!items.length) throw new Error('no books');
+
+        container.innerHTML = items.map(item => {
+          const title = item.querySelector('title')?.textContent || 'Untitled';
+          const author = item.querySelector('author_name')?.textContent || '';
+          const cover = item.querySelector('book_large_image_url')?.textContent || '';
+          const link = item.querySelector('link')?.textContent || '#';
+          return `
+            <a href="${link}" target="_blank" rel="noopener" class="book-card">
+              ${cover
+                ? `<img src="${cover}" alt="${title}" loading="lazy" />`
+                : '<div class="book-cover-placeholder"></div>'}
+              <div class="book-info">
+                <h3>${title}</h3>
+                ${author ? `<p>${author}</p>` : ''}
+              </div>
+            </a>`;
+        }).join('');
+      } catch (_) {
+        container.innerHTML = `<p class="fallback">View my books on <a href="https://www.goodreads.com/user/show/145297564" target="_blank" rel="noopener">Goodreads &rarr;</a></p>`;
+      }
+    }
+
+    loadBooks();
+  </script>
+</body>
+</html>
