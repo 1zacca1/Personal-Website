@@ -4,6 +4,21 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Blog — Zacarias Moreira</title>
+  <style>
+    .post-type-tag {
+      display: inline-block;
+      font-size: 0.7rem;
+      font-weight: 600;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      padding: 2px 8px;
+      border-radius: 4px;
+      margin-bottom: 4px;
+    }
+    .tag-writeup { background: #eef2ff; color: #4f46e5; }
+    .tag-portfolio { background: #f0fdf4; color: #16a34a; }
+  </style>
+  <link rel="icon" type="image/png" href="/favicon.png" />
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
@@ -23,7 +38,7 @@
   <main>
     <section class="page-hero">
       <h1>Blog</h1>
-      <p class="tagline">Essays from <a href="https://theoracleofoslo.substack.com/" target="_blank" rel="noopener">The Oracle of Oslo</a></p>
+      <p class="tagline">Company writeups &amp; portfolio updates</p>
     </section>
 
     <section>
@@ -41,7 +56,7 @@
     async function loadPosts() {
       const container = document.getElementById('posts-container');
       try {
-        const res = await fetch('https://theoracleofoslo.substack.com/api/v1/posts?limit=20');
+        const res = await fetch('https://theoracleofoslo.substack.com/api/v1/posts?limit=50');
         if (!res.ok) throw new Error('fetch failed');
         const posts = await res.json();
         if (!posts.length) throw new Error('no posts');
@@ -51,9 +66,14 @@
             ? new Date(post.post_date).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })
             : '';
           const subtitle = post.subtitle || '';
+          const titleLower = (post.title || '').toLowerCase();
+          const isPortfolio = titleLower.includes('portfolio') || titleLower.includes('update') || titleLower.includes('position');
+          const tagLabel = isPortfolio ? 'Portfolio Update' : 'Company Writeup';
+          const tagClass = isPortfolio ? 'tag-portfolio' : 'tag-writeup';
           return `
             <a href="${post.canonical_url}" target="_blank" rel="noopener" class="post-item">
               <div>
+                <span class="post-type-tag ${tagClass}">${tagLabel}</span>
                 <h3>${post.title}</h3>
                 ${subtitle ? `<p>${subtitle}</p>` : ''}
               </div>
@@ -61,7 +81,7 @@
             </a>`;
         }).join('');
       } catch (_) {
-        container.innerHTML = `<p class="fallback">Read my essays on <a href="https://theoracleofoslo.substack.com/" target="_blank" rel="noopener">The Oracle of Oslo &rarr;</a></p>`;
+        container.innerHTML = `<p class="fallback">Read my writeups on <a href="https://theoracleofoslo.substack.com/" target="_blank" rel="noopener">The Oracle of Oslo &rarr;</a></p>`;
       }
     }
 

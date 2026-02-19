@@ -1,7 +1,7 @@
 module.exports = async function handler(req, res) {
   try {
     const response = await fetch(
-      'https://www.goodreads.com/review/list_rss/145297564?shelf=read&per_page=24',
+      'https://www.goodreads.com/review/list_rss/145297564?shelf=read&per_page=200',
       { headers: { 'User-Agent': 'Mozilla/5.0' } }
     );
     if (!response.ok) throw new Error(`Goodreads returned ${response.status}`);
