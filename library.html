@@ -46,19 +46,39 @@
         const text = await res.text();
         const parser = new DOMParser();
         const xml = parser.parseFromString(text, 'text/xml');
-        const items = Array.from(xml.querySelectorAll('item')).slice(0, 24);
-        if (!items.length) throw new Error('no books');
+        const allItems = Array.from(xml.querySelectorAll('item'));
+        if (!allItems.length) throw new Error('no books');
 
-        container.innerHTML = items.map(item => {
+        const schoolKeywords = [
+          /\btextbook\b/i, /\bworkbook\b/i, /\bstudent\s+guide\b/i,
+          /\bstudy\s+guide\b/i, /\blecture\s+notes\b/i,
+          /\bcalculus\b/i, /\blinear\s+algebra\b/i,
+          /\bdiscrete\s+mathematics\b/i, /\borganic\s+chemistry\b/i,
+          /\bgeneral\s+chemistry\b/i, /\bmicrobiology\b/i,
+          /\banatomy\b/i, /\bphysiology\b/i,
+          /\b\d+(st|nd|rd|th)\s+edition\b/i,
+        ];
+
+        const filtered = allItems.filter(item => {
+          const cover = item.querySelector('book_large_image_url')?.textContent || '';
+          const title = item.querySelector('title')?.textContent || '';
+          // Exclude books with no real cover image
+          if (!cover || cover.includes('nophoto') || cover.includes('nocover') || cover.trim() === '') return false;
+          // Exclude school/textbook titles
+          if (schoolKeywords.some(re => re.test(title))) return false;
+          return true;
+        }).slice(0, 40);
+
+        if (!filtered.length) throw new Error('no books after filtering');
+
+        container.innerHTML = filtered.map(item => {
           const title = item.querySelector('title')?.textContent || 'Untitled';
           const author = item.querySelector('author_name')?.textContent || '';
           const cover = item.querySelector('book_large_image_url')?.textContent || '';
           const link = item.querySelector('link')?.textContent || '#';
           return `
             <a href="${link}" target="_blank" rel="noopener" class="book-card">
-              ${cover
-                ? `<img src="${cover}" alt="${title}" loading="lazy" />`
-                : '<div class="book-cover-placeholder"></div>'}
+              <img src="${cover}" alt="${title}" loading="lazy" />
               <div class="book-info">
                 <h3>${title}</h3>
                 ${author ? `<p>${author}</p>` : ''}
