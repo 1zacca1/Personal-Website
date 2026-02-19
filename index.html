@@ -14,6 +14,8 @@
       <ul>
         <li><a href="#about">About</a></li>
         <li><a href="#projects">Projects</a></li>
+        <li><a href="#library">Library</a></li>
+        <li><a href="#blog">Blog</a></li>
         <li><a href="#contact">Contact</a></li>
       </ul>
     </nav>
@@ -21,7 +23,7 @@
 
   <main>
     <section class="hero">
-      <h1>Hi, I'm <span class="highlight">Zacarias Moreira</span></h1>
+      <h1>Zacarias Moreira</h1>
       <p class="tagline">Developer &bull; Creator &bull; Problem Solver</p>
     </section>
 
@@ -33,14 +35,27 @@
     <section id="projects">
       <h2>Projects</h2>
       <div class="project-grid">
-        <div class="card">
-          <h3>Project One</h3>
-          <p>A cool project description goes here.</p>
-        </div>
-        <div class="card">
-          <h3>Project Two</h3>
-          <p>Another project description goes here.</p>
-        </div>
+        <a href="https://speedreader.space" target="_blank" rel="noopener" class="card">
+          <h3>SpeedReader.space</h3>
+          <p>A speed reading application to help you read faster and retain more.</p>
+          <span class="card-link">speedreader.space &rarr;</span>
+        </a>
+      </div>
+    </section>
+
+    <section id="library">
+      <h2>Library</h2>
+      <p class="section-desc">Books I've been reading, via my <a href="https://www.goodreads.com" target="_blank" rel="noopener">Goodreads</a>.</p>
+      <div class="book-grid" id="books-container">
+        <p class="loading">Loading books&hellip;</p>
+      </div>
+    </section>
+
+    <section id="blog">
+      <h2>Blog</h2>
+      <p class="section-desc">Essays and thoughts published on <a href="https://theoracleofoslo.substack.com/" target="_blank" rel="noopener">The Oracle of Oslo</a>.</p>
+      <div class="post-list" id="posts-container">
+        <p class="loading">Loading posts&hellip;</p>
       </div>
     </section>
 
@@ -53,5 +68,84 @@
   <footer>
     <p>&copy; 2026 Zacarias Moreira. All rights reserved.</p>
   </footer>
+
+  <script>
+    // ── Substack posts ───────────────────────────────────────────────────────
+    async function loadPosts() {
+      const container = document.getElementById('posts-container');
+      try {
+        const res = await fetch('https://theoracleofoslo.substack.com/api/v1/posts?limit=8');
+        if (!res.ok) throw new Error('fetch failed');
+        const posts = await res.json();
+        if (!posts.length) throw new Error('no posts');
+        container.innerHTML = posts.map(post => {
+          const date = post.post_date
+            ? new Date(post.post_date).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })
+            : '';
+          const subtitle = post.subtitle || '';
+          return `
+            <a href="${post.canonical_url}" target="_blank" rel="noopener" class="post-item">
+              <div>
+                <h3>${post.title}</h3>
+                ${subtitle ? `<p>${subtitle}</p>` : ''}
+              </div>
+              ${date ? `<span class="post-date">${date}</span>` : ''}
+            </a>`;
+        }).join('');
+      } catch (_) {
+        container.innerHTML = `<p class="fallback">Read my latest essays on <a href="https://theoracleofoslo.substack.com/" target="_blank" rel="noopener">The Oracle of Oslo &rarr;</a></p>`;
+      }
+    }
+
+    // ── Goodreads books ──────────────────────────────────────────────────────
+    // Replace the value below with your Goodreads numeric user ID.
+    // Find it in your Goodreads profile URL: goodreads.com/user/show/XXXXXXX
+    const GOODREADS_USER_ID = '145297564';
+
+    async function loadBooks() {
+      const container = document.getElementById('books-container');
+      const profileUrl = GOODREADS_USER_ID
+        ? `https://www.goodreads.com/user/show/${GOODREADS_USER_ID}`
+        : 'https://www.goodreads.com';
+
+      if (!GOODREADS_USER_ID) {
+        container.innerHTML = `<p class="fallback">View my books on <a href="${profileUrl}" target="_blank" rel="noopener">Goodreads &rarr;</a></p>`;
+        return;
+      }
+
+      try {
+        const rssUrl = `https://www.goodreads.com/review/list_rss/${GOODREADS_USER_ID}?shelf=read&per_page=18`;
+        const res = await fetch(`https://api.allorigins.win/get?url=${encodeURIComponent(rssUrl)}`);
+        if (!res.ok) throw new Error('proxy failed');
+        const data = await res.json();
+        const parser = new DOMParser();
+        const xml = parser.parseFromString(data.contents, 'text/xml');
+        const items = Array.from(xml.querySelectorAll('item')).slice(0, 18);
+        if (!items.length) throw new Error('no books');
+
+        container.innerHTML = items.map(item => {
+          const title = item.querySelector('title')?.textContent || 'Untitled';
+          const author = item.querySelector('author_name')?.textContent || '';
+          const cover = item.querySelector('book_large_image_url')?.textContent || '';
+          const link = item.querySelector('link')?.textContent || profileUrl;
+          return `
+            <a href="${link}" target="_blank" rel="noopener" class="book-card">
+              ${cover
+                ? `<img src="${cover}" alt="${title}" loading="lazy" />`
+                : '<div class="book-cover-placeholder"></div>'}
+              <div class="book-info">
+                <h3>${title}</h3>
+                ${author ? `<p>${author}</p>` : ''}
+              </div>
+            </a>`;
+        }).join('');
+      } catch (_) {
+        container.innerHTML = `<p class="fallback">View my books on <a href="${profileUrl}" target="_blank" rel="noopener">Goodreads &rarr;</a></p>`;
+      }
+    }
+
+    loadPosts();
+    loadBooks();
+  </script>
 </body>
 </html>
