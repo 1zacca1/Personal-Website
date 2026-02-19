@@ -59,8 +59,13 @@ nav a {
   transition: color 0.15s;
 }
 
-nav a:hover {
+nav a:hover,
+nav a.active {
   color: var(--text);
+}
+
+.page-hero {
+  padding: 4rem 0 2rem;
 }
 
 /* Layout */

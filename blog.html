@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Blog — Zacarias Moreira</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <header>
+    <nav>
+      <a href="/" class="logo">Zacarias Moreira</a>
+      <ul>
+        <li><a href="/">About</a></li>
+        <li><a href="/projects.html">Projects</a></li>
+        <li><a href="/library.html">Library</a></li>
+        <li><a href="/blog.html" class="active">Blog</a></li>
+        <li><a href="/contact.html">Contact</a></li>
+      </ul>
+    </nav>
+  </header>
+
+  <main>
+    <section class="page-hero">
+      <h1>Blog</h1>
+      <p class="tagline">Essays from <a href="https://theoracleofoslo.substack.com/" target="_blank" rel="noopener">The Oracle of Oslo</a></p>
+    </section>
+
+    <section>
+      <div class="post-list" id="posts-container">
+        <p class="loading">Loading posts&hellip;</p>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <p>&copy; 2026 Zacarias Moreira</p>
+  </footer>
+
+  <script>
+    async function loadPosts() {
+      const container = document.getElementById('posts-container');
+      try {
+        const res = await fetch('https://theoracleofoslo.substack.com/api/v1/posts?limit=20');
+        if (!res.ok) throw new Error('fetch failed');
+        const posts = await res.json();
+        if (!posts.length) throw new Error('no posts');
+
+        container.innerHTML = posts.map(post => {
+          const date = post.post_date
+            ? new Date(post.post_date).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })
+            : '';
+          const subtitle = post.subtitle || '';
+          return `
+            <a href="${post.canonical_url}" target="_blank" rel="noopener" class="post-item">
+              <div>
+                <h3>${post.title}</h3>
+                ${subtitle ? `<p>${subtitle}</p>` : ''}
+              </div>
+              ${date ? `<span class="post-date">${date}</span>` : ''}
+            </a>`;
+        }).join('');
+      } catch (_) {
+        container.innerHTML = `<p class="fallback">Read my essays on <a href="https://theoracleofoslo.substack.com/" target="_blank" rel="noopener">The Oracle of Oslo &rarr;</a></p>`;
+      }
+    }
+
+    loadPosts();
+  </script>
+</body>
+</html>
