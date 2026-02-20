@@ -270,6 +270,27 @@ h2 {
   text-underline-offset: 3px;
 }
 
+/* Social links */
+.social-links {
+  display: flex;
+  gap: 1.5rem;
+  margin-top: 1.25rem;
+}
+
+.social-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: var(--muted);
+  text-decoration: none;
+  font-size: 0.95rem;
+  transition: color 0.15s;
+}
+
+.social-link:hover {
+  color: var(--text);
+}
+
 /* Footer */
 footer {
   text-align: center;
