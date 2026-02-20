@@ -75,17 +75,32 @@
           /zero\s+to\s+one.*fast\s*reads?/i,
         ];
 
-        const filtered = allItems.filter(item => {
+        const pinnedTitles = [
+          /security\s+analysis/i,
+          /little\s+book\s+that\s+beats\s+the\s+market/i,
+          /one\s+up\s+on\s+wall\s+street/i,
+          /essays\s+of\s+warren\s+buffett/i,
+          /common\s+stocks\s+and\s+uncommon\s+profits/i,
+          /warren\s+buffett\s+and\s+the\s+interpretation\s+of\s+financial\s+statements/i,
+        ];
+
+        const passesFilters = item => {
           const cover = item.querySelector('book_large_image_url')?.textContent || '';
           const title = item.querySelector('title')?.textContent || '';
-          // Exclude books with no real cover image
           if (!cover || cover.includes('nophoto') || cover.includes('nocover') || cover.trim() === '') return false;
-          // Exclude school/textbook titles
           if (schoolKeywords.some(re => re.test(title))) return false;
-          // Exclude specific titles
           if (excludedTitles.some(re => re.test(title))) return false;
           return true;
+        };
+
+        const eligible = allItems.filter(passesFilters);
+        const base = eligible.slice(0, 40);
+        const baseSet = new Set(base);
+        const pinned = eligible.slice(40).filter(item => {
+          const title = item.querySelector('title')?.textContent || '';
+          return pinnedTitles.some(re => re.test(title));
         });
+        const filtered = [...base, ...pinned.filter(item => !baseSet.has(item))];
 
         if (!filtered.length) throw new Error('no books after filtering');
 
