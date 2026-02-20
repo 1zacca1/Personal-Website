@@ -85,7 +85,7 @@
           // Exclude specific titles
           if (excludedTitles.some(re => re.test(title))) return false;
           return true;
-        }).slice(0, 40);
+        });
 
         if (!filtered.length) throw new Error('no books after filtering');
 
