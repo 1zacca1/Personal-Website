@@ -291,6 +291,350 @@ h2 {
   color: var(--text);
 }
 
+/* ── Screener page ─────────────────────────────────────────────── */
+
+.screener-section {
+  padding: 2rem 0 4rem;
+  border-bottom: none;
+}
+
+/* Tab bar */
+.tab-bar {
+  display: flex;
+  gap: 0;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 2rem;
+}
+
+.tab-btn {
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  padding: 0.65rem 1.25rem;
+  font-family: inherit;
+  font-size: 0.9rem;
+  color: var(--muted);
+  cursor: pointer;
+  margin-bottom: -1px;
+  transition: color 0.15s, border-color 0.15s;
+}
+
+.tab-btn:hover {
+  color: var(--text);
+}
+
+.tab-btn.active {
+  color: var(--text);
+  border-bottom-color: var(--text);
+  font-weight: 600;
+}
+
+/* Screener filters */
+.filter-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 1rem;
+  margin-bottom: 0.75rem;
+}
+
+.filter-label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+
+.filter-label select {
+  font-family: inherit;
+  font-size: 0.875rem;
+  color: var(--text);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 0.45rem 0.75rem;
+  cursor: pointer;
+  transition: border-color 0.15s;
+  appearance: auto;
+}
+
+.filter-label select:focus {
+  outline: none;
+  border-color: var(--text);
+}
+
+.run-btn {
+  font-family: inherit;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--bg);
+  background: var(--text);
+  border: 1px solid var(--text);
+  border-radius: var(--radius);
+  padding: 0.5rem 1.25rem;
+  cursor: pointer;
+  transition: opacity 0.15s;
+  white-space: nowrap;
+}
+
+.run-btn:hover {
+  opacity: 0.8;
+}
+
+.run-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.filter-note {
+  font-size: 0.8rem;
+  color: var(--muted);
+  margin-bottom: 1.5rem;
+  line-height: 1.5;
+}
+
+.filter-note a {
+  color: var(--text);
+  text-underline-offset: 3px;
+}
+
+.filter-note code {
+  font-family: monospace;
+  font-size: 0.78rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 0.1em 0.35em;
+}
+
+/* Status / error */
+.screen-status {
+  margin-bottom: 1rem;
+  min-height: 1.2rem;
+}
+
+.muted-text {
+  font-size: 0.875rem;
+  color: var(--muted);
+}
+
+.screen-error {
+  font-size: 0.875rem;
+  color: #c0392b;
+}
+
+/* Results table */
+.table-wrap {
+  overflow-x: auto;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  margin-bottom: 0.75rem;
+}
+
+.screener-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.85rem;
+  white-space: nowrap;
+}
+
+.screener-table thead {
+  background: var(--surface);
+}
+
+.screener-table th {
+  text-align: left;
+  padding: 0.65rem 0.85rem;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--muted);
+  border-bottom: 1px solid var(--border);
+  letter-spacing: 0.02em;
+}
+
+.screener-table td {
+  padding: 0.6rem 0.85rem;
+  border-bottom: 1px solid var(--border);
+  vertical-align: middle;
+}
+
+.screener-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.screener-table tbody tr:hover {
+  background: var(--surface);
+}
+
+.ticker-link {
+  font-weight: 700;
+  color: var(--text);
+  text-decoration: none;
+  letter-spacing: 0.03em;
+}
+
+.ticker-link:hover {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.company-cell {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  max-width: 220px;
+  white-space: normal;
+  word-break: break-word;
+}
+
+.edgar-link {
+  font-size: 0.7rem;
+  color: var(--muted);
+  text-decoration: none;
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  padding: 0.1em 0.35em;
+  flex-shrink: 0;
+  transition: color 0.15s, border-color 0.15s;
+}
+
+.edgar-link:hover {
+  color: var(--text);
+  border-color: var(--text);
+}
+
+.highlight-good {
+  color: #1a7a4a;
+  font-weight: 600;
+}
+
+.table-note {
+  font-size: 0.78rem;
+  color: var(--muted);
+  line-height: 1.5;
+}
+
+/* News pills */
+.news-pill-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.news-pill {
+  font-family: inherit;
+  font-size: 0.8rem;
+  color: var(--muted);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 0.35rem 0.85rem;
+  cursor: pointer;
+  transition: color 0.15s, border-color 0.15s, background 0.15s;
+}
+
+.news-pill:hover {
+  color: var(--text);
+  border-color: var(--text);
+}
+
+.news-pill.active {
+  color: var(--bg);
+  background: var(--text);
+  border-color: var(--text);
+}
+
+/* Filing list */
+.filing-list {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+
+.filing-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.85rem 1rem;
+  border-bottom: 1px solid var(--border);
+  text-decoration: none;
+  color: inherit;
+  transition: background 0.12s;
+}
+
+.filing-item:last-child {
+  border-bottom: none;
+}
+
+.filing-item:hover {
+  background: var(--surface);
+}
+
+.filing-left {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  min-width: 0;
+}
+
+.form-badge {
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: var(--muted);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 0.15em 0.5em;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.filing-entity-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  min-width: 0;
+}
+
+.filing-entity {
+  font-size: 0.88rem;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.filing-cik {
+  font-size: 0.75rem;
+}
+
+.filing-cik a {
+  color: var(--muted);
+  text-decoration: none;
+  text-underline-offset: 3px;
+  transition: color 0.15s;
+}
+
+.filing-cik a:hover {
+  color: var(--text);
+  text-decoration: underline;
+}
+
+.filing-date {
+  font-size: 0.8rem;
+  color: var(--muted);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+/* ── Footer ────────────────────────────────────────────────────── */
+
 /* Footer */
 footer {
   text-align: center;

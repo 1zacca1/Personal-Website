@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Deep value stock screener — small companies trading below net cash with single-digit earnings multiples." />
+  <title>Screener — Zacarias Moreira</title>
+  <link rel="icon" type="image/png" href="/favicon.png" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <header>
+    <nav>
+      <a href="/" class="logo">Zacarias Moreira</a>
+      <ul>
+        <li><a href="/">About</a></li>
+        <li><a href="/projects.html">Projects</a></li>
+        <li><a href="/library.html">Library</a></li>
+        <li><a href="/blog.html">Blog</a></li>
+        <li><a href="/screener.html" class="active">Screener</a></li>
+        <li><a href="/contact.html">Contact</a></li>
+      </ul>
+    </nav>
+  </header>
+
+  <main>
+    <section class="page-hero">
+      <h1>Deep Value Screener</h1>
+      <p class="tagline">Small companies &bull; Net cash discounts &bull; Low earnings multiples</p>
+    </section>
+
+    <section class="screener-section">
+
+      <!-- Tab bar -->
+      <div class="tab-bar">
+        <button class="tab-btn active" data-tab="screener">Stock Screener</button>
+        <button class="tab-btn" data-tab="news">News &amp; Filings</button>
+      </div>
+
+      <!-- ── STOCK SCREENER TAB ── -->
+      <div id="tab-screener" class="tab-panel">
+
+        <div class="filter-row">
+          <label class="filter-label">
+            Market cap
+            <select id="f-maxcap">
+              <option value="50000000">Under $50M</option>
+              <option value="100000000">Under $100M</option>
+              <option value="300000000" selected>Under $300M</option>
+              <option value="500000000">Under $500M</option>
+            </select>
+          </label>
+
+          <label class="filter-label">
+            Max P/E
+            <select id="f-maxpe">
+              <option value="5">5&times;</option>
+              <option value="7">7&times;</option>
+              <option value="10" selected>10&times;</option>
+              <option value="15">15&times;</option>
+            </select>
+          </label>
+
+          <label class="filter-label">
+            Price vs net cash
+            <select id="f-ncratio">
+              <option value="1">At or below net cash</option>
+              <option value="1.5" selected>Within 1.5&times; net cash</option>
+              <option value="2">Within 2&times; net cash</option>
+              <option value="999">Any (ignore net cash)</option>
+            </select>
+          </label>
+
+          <button id="run-btn" class="run-btn" onclick="runScreener()">Run Screener</button>
+        </div>
+
+        <p class="filter-note">
+          Screens US-listed equities (excl. ETFs) with positive trailing earnings and net cash on the balance sheet.
+          Data via <a href="https://financialmodelingprep.com" target="_blank" rel="noopener">Financial Modeling Prep</a>.
+          Set <code>FMP_API_KEY</code> in your Vercel environment to activate.
+        </p>
+
+        <div id="screener-status" class="screen-status"></div>
+        <div id="screener-results"></div>
+      </div>
+
+      <!-- ── NEWS & FILINGS TAB ── -->
+      <div id="tab-news" class="tab-panel" style="display:none">
+
+        <div class="news-pill-row">
+          <button class="news-pill active" data-query="odd lot tender" data-forms="SC TO-T,SC TO-I">Odd Lot Tenders</button>
+          <button class="news-pill" data-query="plan of liquidation" data-forms="8-K,14A">Liquidations</button>
+          <button class="news-pill" data-query="going private" data-forms="SC 13E-3,8-K">Going Private</button>
+          <button class="news-pill" data-query="dissolution" data-forms="8-K">Dissolutions</button>
+          <button class="news-pill" data-query="" data-forms="15-12G">Going Dark (15-12G)</button>
+          <button class="news-pill" data-query="" data-forms="SC TO-T,SC TO-I">All Tender Offers</button>
+        </div>
+
+        <p class="filter-note">
+          Live feed from <a href="https://www.sec.gov/cgi-bin/srqsb" target="_blank" rel="noopener">SEC EDGAR</a>
+          full-text search &mdash; filings from the past 6 months. Click any row to open the filing on EDGAR.
+        </p>
+
+        <div id="news-status" class="screen-status"></div>
+        <div id="news-results"></div>
+      </div>
+
+    </section>
+  </main>
+
+  <footer>
+    <p>&copy; 2026 Zacarias Moreira</p>
+  </footer>
+
+  <script>
+    // ── Tab switching ──────────────────────────────────────────────
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        document.querySelectorAll('.tab-panel').forEach(p => p.style.display = 'none');
+        btn.classList.add('active');
+        document.getElementById('tab-' + btn.dataset.tab).style.display = '';
+
+        // Lazy-load news on first visit to that tab
+        if (btn.dataset.tab === 'news' && !document.getElementById('news-results').innerHTML) {
+          const activePill = document.querySelector('.news-pill.active');
+          fetchNews(activePill.dataset.query, activePill.dataset.forms);
+        }
+      });
+    });
+
+    // ── News pill switching ────────────────────────────────────────
+    document.querySelectorAll('.news-pill').forEach(pill => {
+      pill.addEventListener('click', () => {
+        document.querySelectorAll('.news-pill').forEach(p => p.classList.remove('active'));
+        pill.classList.add('active');
+        fetchNews(pill.dataset.query, pill.dataset.forms);
+      });
+    });
+
+    // ── Stock Screener ─────────────────────────────────────────────
+    async function runScreener() {
+      const btn    = document.getElementById('run-btn');
+      const status = document.getElementById('screener-status');
+      const results = document.getElementById('screener-results');
+
+      const maxCap  = document.getElementById('f-maxcap').value;
+      const maxPE   = document.getElementById('f-maxpe').value;
+      const ncRatio = document.getElementById('f-ncratio').value;
+
+      btn.disabled = true;
+      btn.textContent = 'Fetching…';
+      status.innerHTML = '<span class="muted-text">Pulling stock list and key metrics — may take 10–20 s on the first run…</span>';
+      results.innerHTML = '';
+
+      try {
+        const res = await fetch(`/api/screener?maxCap=${maxCap}&maxPE=${maxPE}&ncRatio=${ncRatio}`);
+        const data = await res.json();
+
+        if (data.error) {
+          status.innerHTML = `<span class="screen-error">${data.error}</span>`;
+          return;
+        }
+
+        if (!Array.isArray(data) || data.length === 0) {
+          status.innerHTML = '<span class="muted-text">No stocks matched the current filters. Try loosening the criteria.</span>';
+          return;
+        }
+
+        status.innerHTML = `<span class="muted-text">${data.length} compan${data.length === 1 ? 'y' : 'ies'} matched &mdash; sorted by P/E ascending.</span>`;
+        renderTable(data);
+      } catch (e) {
+        status.innerHTML = '<span class="screen-error">Request failed. Verify the API is configured and try again.</span>';
+      } finally {
+        btn.disabled = false;
+        btn.textContent = 'Run Screener';
+      }
+    }
+
+    function renderTable(stocks) {
+      const results = document.getElementById('screener-results');
+
+      // Sort by P/E ascending
+      const sorted = [...stocks].sort((a, b) => (a.pe || 999) - (b.pe || 999));
+
+      const rows = sorted.map(s => {
+        const pe       = fmt(s.pe, v => v.toFixed(1) + '×');
+        const price    = fmt(s.price, v => '$' + v.toFixed(2));
+        const cap      = fmtCap(s.marketCap);
+        const ncRatio  = (s.netCashPerShare && s.price && s.netCashPerShare > 0)
+                           ? (s.price / s.netCashPerShare).toFixed(2) + '×'
+                           : '—';
+        const roic     = fmt(s.roic, v => (v * 100).toFixed(1) + '%');
+        const ncps     = fmt(s.netCashPerShare, v => '$' + v.toFixed(2));
+        const fcfYield = fmt(s.freeCashFlowYield, v => (v * 100).toFixed(1) + '%');
+
+        const yahooUrl  = `https://finance.yahoo.com/quote/${s.symbol}`;
+        const edgarUrl  = `https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&company=${encodeURIComponent(s.name)}&CIK=&type=10-K&dateb=&owner=include&count=10&search_text=`;
+
+        return `<tr>
+          <td><a href="${yahooUrl}" target="_blank" rel="noopener" class="ticker-link">${s.symbol}</a></td>
+          <td class="company-cell">
+            ${s.name}
+            <a href="${edgarUrl}" target="_blank" rel="noopener" class="edgar-link" title="EDGAR filings">SEC</a>
+          </td>
+          <td>${price}</td>
+          <td>${cap}</td>
+          <td class="${s.pe && s.pe <= 5 ? 'highlight-good' : ''}">${pe}</td>
+          <td>${ncps}</td>
+          <td class="${parseFloat(ncRatio) <= 1 ? 'highlight-good' : ''}">${ncRatio}</td>
+          <td>${roic}</td>
+          <td>${fcfYield}</td>
+          <td class="muted-text">${s.sector || '—'}</td>
+        </tr>`;
+      }).join('');
+
+      results.innerHTML = `
+        <div class="table-wrap">
+          <table class="screener-table">
+            <thead>
+              <tr>
+                <th>Ticker</th>
+                <th>Company</th>
+                <th>Price</th>
+                <th>Mkt Cap</th>
+                <th>P/E</th>
+                <th>Net Cash/Sh</th>
+                <th>Price/Net Cash</th>
+                <th>ROIC</th>
+                <th>FCF Yield</th>
+                <th>Sector</th>
+              </tr>
+            </thead>
+            <tbody>${rows}</tbody>
+          </table>
+        </div>
+        <p class="table-note">
+          Trailing twelve months. Net Cash = Cash &minus; Total Debt (per share). Green = P/E &le; 5 or price at/below net cash.
+          Not investment advice &mdash; always verify independently.
+        </p>`;
+    }
+
+    function fmt(val, fn) {
+      return (typeof val === 'number' && isFinite(val)) ? fn(val) : '—';
+    }
+
+    function fmtCap(n) {
+      if (!n) return '—';
+      if (n >= 1e9) return '$' + (n / 1e9).toFixed(1) + 'B';
+      if (n >= 1e6) return '$' + Math.round(n / 1e6) + 'M';
+      return '$' + n.toLocaleString();
+    }
+
+    // ── News & Filings (SEC EDGAR EFTS) ───────────────────────────
+    async function fetchNews(query, forms) {
+      const status  = document.getElementById('news-status');
+      const results = document.getElementById('news-results');
+
+      status.innerHTML = '<span class="muted-text">Loading filings from SEC EDGAR…</span>';
+      results.innerHTML = '';
+
+      try {
+        const params = new URLSearchParams();
+        if (query) params.set('q', `"${query}"`);
+        if (forms)  params.set('forms', forms);
+        params.set('dateRange', 'custom');
+        params.set('startdt', dateMonthsAgo(6));
+
+        const url = `https://efts.sec.gov/LATEST/search-index?${params.toString()}`;
+        const res  = await fetch(url);
+        const data = await res.json();
+
+        const hits  = data?.hits?.hits || [];
+        const total = data?.hits?.total?.value || 0;
+
+        if (!hits.length) {
+          status.innerHTML = '<span class="muted-text">No recent filings found for this category.</span>';
+          return;
+        }
+
+        const shown = hits.length;
+        status.innerHTML = `<span class="muted-text">${total.toLocaleString()} filing${total !== 1 ? 's' : ''} found &mdash; showing most recent ${shown}.</span>`;
+        renderFilings(hits);
+      } catch (e) {
+        status.innerHTML = '<span class="screen-error">Could not reach SEC EDGAR. Check your connection and try again.</span>';
+      }
+    }
+
+    function renderFilings(hits) {
+      const results = document.getElementById('news-results');
+
+      const items = hits.map(h => {
+        const s          = h._source || {};
+        const accession  = h._id || '';
+
+        // Build EDGAR company/filing URL from accession number
+        const parts      = accession.split('-');
+        const rawCik     = parts[0] || '';
+        const cik        = rawCik.replace(/^0+/, '') || '0';
+        const accNoSlash = accession.replace(/-/g, '');
+
+        // Link to the filing index page
+        const filingUrl  = accNoSlash
+          ? `https://www.sec.gov/Archives/edgar/data/${cik}/${accNoSlash}/${accession}-index.htm`
+          : `https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&CIK=${cik}&type=${encodeURIComponent(s.form_type || '')}&count=10`;
+
+        // Company search URL as fallback link
+        const companyUrl = `https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&CIK=${cik}&type=&dateb=&owner=include&count=10`;
+
+        // Display names come as "Company Name (CIK)" — strip CIK
+        const rawNames   = Array.isArray(s.display_names) ? s.display_names : (s.entity_name ? [s.entity_name] : ['—']);
+        const entityName = rawNames.map(n => n.replace(/\s*\(\d+\)\s*$/, '').trim()).join(', ');
+
+        const date = s.file_date
+          ? new Date(s.file_date).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })
+          : '—';
+
+        const formType = s.form_type || '?';
+
+        return `<a href="${filingUrl}" target="_blank" rel="noopener" class="filing-item">
+          <div class="filing-left">
+            <span class="form-badge">${formType}</span>
+            <div class="filing-entity-wrap">
+              <span class="filing-entity">${entityName}</span>
+              <span class="filing-cik"><a href="${companyUrl}" target="_blank" rel="noopener" onclick="event.stopPropagation()">EDGAR profile</a></span>
+            </div>
+          </div>
+          <span class="filing-date">${date}</span>
+        </a>`;
+      }).join('');
+
+      results.innerHTML = `<div class="filing-list">${items}</div>`;
+    }
+
+    function dateMonthsAgo(months) {
+      const d = new Date();
+      d.setMonth(d.getMonth() - months);
+      return d.toISOString().split('T')[0];
+    }
+  </script>
+</body>
+</html>
