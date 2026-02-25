@@ -28,7 +28,7 @@ export default async function handler(req, res) {
     // Step 1: Screen for small US companies
     const screenerUrl = new URL('https://financialmodelingprep.com/api/v3/stock-screener');
     screenerUrl.searchParams.set('marketCapMoreThan', '5000000');
-    screenerUrl.searchParams.set('marketCapLessThan', '500000000'); // always fetch wide set; filter later
+    screenerUrl.searchParams.set('marketCapLessThan', '500000000');
     screenerUrl.searchParams.set('priceMoreThan', '0.10');
     screenerUrl.searchParams.set('isEtf', 'false');
     screenerUrl.searchParams.set('isActivelyTrading', 'true');
@@ -66,15 +66,13 @@ export default async function handler(req, res) {
             industry: stock.industry,
             country: stock.country,
             exchange: stock.exchangeShortName,
-            // profitability
             pe: m.peRatioTTM,
             earningsYield: m.earningsYieldTTM,
             freeCashFlowYield: m.freeCashFlowYieldTTM,
             roic: m.roicTTM,
             roe: m.roeTTM,
-            // net cash / balance sheet
             netCashPerShare: m.netCashPerShareTTM,
-            netCurrentAssetValue: m.netCurrentAssetValueTTM, // Graham net-net
+            netCurrentAssetValue: m.netCurrentAssetValueTTM,
             cashPerShare: m.cashPerShareTTM,
             debtPerShare: m.interestDebtPerShareTTM,
             currentRatio: m.currentRatioTTM,
@@ -97,22 +95,17 @@ export default async function handler(req, res) {
 
 function applyFilters(stocks, maxPE, ncRatio, maxCap) {
   return stocks.filter((s) => {
-    // Market cap filter
     if (s.marketCap > maxCap) return false;
 
-    // Must have positive, single-digit P/E
     const peOk = typeof s.pe === 'number' && s.pe > 0 && s.pe <= maxPE;
     if (!peOk) return false;
 
-    // Net cash ratio (price relative to net cash per share)
     if (ncRatio < 900 && typeof s.netCashPerShare === 'number' && s.netCashPerShare > 0) {
       if (s.price > s.netCashPerShare * ncRatio) return false;
     } else if (ncRatio < 900 && (!s.netCashPerShare || s.netCashPerShare <= 0)) {
-      // Negative net cash — exclude when filtering for net cash discounts
       return false;
     }
 
-    // Must show some sign of profitability
     const profitable =
       (typeof s.roic === 'number' && s.roic > 0) ||
       (typeof s.earningsYield === 'number' && s.earningsYield > 0);
