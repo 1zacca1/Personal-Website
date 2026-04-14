@@ -1,0 +1,7 @@
+{
+  "functions": {
+    "api/spinoffs.js":       { "maxDuration": 30 },
+    "api/value-screener.js": { "maxDuration": 60 },
+    "api/screener.js":       { "maxDuration": 60 }
+  }
+}
