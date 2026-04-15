@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="All corporate spinoffs published in 2026, updated automatically." />
+  <title>2026 Spinoffs — Zacarias Moreira</title>
+  <link rel="icon" type="image/png" href="/favicon.png" />
+  <link rel="stylesheet" href="/style.css" />
+  <style>
+    .dashboard-controls {
+      display: flex;
+      gap: 0.75rem;
+      margin-bottom: 1.25rem;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+
+    .ctrl-input,
+    .ctrl-select {
+      padding: 0.45rem 0.7rem;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      font-family: inherit;
+      font-size: 0.875rem;
+      background: var(--bg);
+      color: var(--text);
+    }
+
+    .ctrl-input { flex: 1; min-width: 180px; }
+
+    .ctrl-input:focus,
+    .ctrl-select:focus {
+      outline: none;
+      border-color: var(--text);
+    }
+
+    .dashboard-meta {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 0.75rem;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      font-size: 0.8rem;
+      color: var(--muted);
+    }
+
+    .table-wrap { overflow-x: auto; }
+
+    .spinoffs-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.875rem;
+    }
+
+    .spinoffs-table thead th {
+      text-align: left;
+      padding: 0.55rem 0.75rem;
+      border-bottom: 2px solid var(--border);
+      font-size: 0.78rem;
+      font-weight: 600;
+      color: var(--muted);
+      white-space: nowrap;
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .spinoffs-table thead th:hover { color: var(--text); }
+    .spinoffs-table thead th.asc::after  { content: ' \2191'; }
+    .spinoffs-table thead th.desc::after { content: ' \2193'; }
+
+    .spinoffs-table tbody td {
+      padding: 0.55rem 0.75rem;
+      border-bottom: 1px solid var(--border);
+      vertical-align: top;
+      line-height: 1.4;
+    }
+
+    .spinoffs-table tbody tr:last-child td { border-bottom: none; }
+    .spinoffs-table tbody tr:hover td { background: var(--surface); }
+
+    .badge {
+      display: inline-block;
+      padding: 0.1rem 0.35rem;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 3px;
+      font-family: 'Courier New', monospace;
+      font-size: 0.78rem;
+      white-space: nowrap;
+    }
+
+    .cell-sub {
+      display: block;
+      font-size: 0.78rem;
+      color: var(--muted);
+      margin-top: 0.2rem;
+    }
+
+    .table-note {
+      font-size: 0.8rem;
+      color: var(--muted);
+      margin-top: 0.75rem;
+    }
+
+    .table-note a {
+      color: var(--text);
+      text-decoration: underline;
+      text-underline-offset: 3px;
+    }
+
+    .empty-state {
+      padding: 3rem 0;
+      text-align: center;
+      color: var(--muted);
+      font-size: 0.9rem;
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <nav>
+      <a href="/" class="logo">Zacarias Moreira</a>
+      <ul>
+        <li><a href="/">About</a></li>
+        <li><a href="/projects.html">Projects</a></li>
+        <li><a href="/library.html">Library</a></li>
+        <li><a href="/blog.html">Blog</a></li>
+        <li><a href="/contact.html">Contact</a></li>
+      </ul>
+    </nav>
+  </header>
+
+  <main>
+    <section class="page-hero">
+      <h1>2026 Spinoffs</h1>
+      <p class="tagline">Corporate spinoffs published so far in 2026 &mdash; updated automatically</p>
+    </section>
+
+    <section>
+      <p class="section-desc">
+        Tracking spinoffs announced or completed in 2026. Data sourced from
+        <a href="https://thezenofinvesting.com/recent-spinoffs/" target="_blank" rel="noopener">The Zeno of Investing</a>
+        and refreshed every 4 hours.
+      </p>
+
+      <div class="dashboard-controls">
+        <input
+          id="search"
+          type="text"
+          class="ctrl-input"
+          placeholder="Search company or ticker&hellip;"
+          oninput="applyFilters()"
+        />
+        <select id="quarter" class="ctrl-select" onchange="applyFilters()">
+          <option value="">All quarters</option>
+          <option value="1">Q1 &mdash; Jan&ndash;Mar</option>
+          <option value="2">Q2 &mdash; Apr&ndash;Jun</option>
+          <option value="3">Q3 &mdash; Jul&ndash;Sep</option>
+          <option value="4">Q4 &mdash; Oct&ndash;Dec</option>
+        </select>
+      </div>
+
+      <div class="dashboard-meta">
+        <span id="count"></span>
+        <span id="updated"></span>
+      </div>
+
+      <div id="status" class="loading">Loading&hellip;</div>
+      <div id="dashboard"></div>
+    </section>
+  </main>
+
+  <footer>
+    <p>&copy; 2026 Zacarias Moreira</p>
+  </footer>
+
+  <script>
+    const COLS = [
+      { key: 'date',    label: 'Date'     },
+      { key: 'parent',  label: 'Parent'   },
+      { key: 'spinoff', label: 'Spinoff'  },
+      { key: 'exchange',label: 'Exchange' },
+      { key: 'ratio',   label: 'Ratio'    },
+      { key: 'sector',  label: 'Sector'   },
+    ];
+
+    let allData  = [];
+    let sortKey  = 'date';
+    let sortDir  = 'desc';
+
+    // ── Fetch ────────────────────────────────────────────────────────
+    async function load() {
+      const status  = document.getElementById('status');
+      const updated = document.getElementById('updated');
+
+      try {
+        const res  = await fetch('/api/spinoffs');
+        const json = await res.json();
+
+        if (json.error) throw new Error(json.error);
+
+        allData = json.data || [];
+
+        if (json.updatedAt) {
+          const ts = new Date(json.updatedAt).toLocaleString('en-US', {
+            month: 'short', day: 'numeric',
+            hour: 'numeric', minute: '2-digit',
+          });
+          updated.textContent = 'Updated ' + ts + (json.stale ? ' \u00b7 stale' : '');
+        }
+
+        status.style.display = 'none';
+        applyFilters();
+      } catch (e) {
+        status.className = 'fallback';
+        status.innerHTML =
+          'Could not load data. View the source directly at ' +
+          '<a href="https://thezenofinvesting.com/recent-spinoffs/" target="_blank" rel="noopener">thezenofinvesting.com</a>.';
+      }
+    }
+
+    // ── Filter & Sort ────────────────────────────────────────────────
+    function applyFilters() {
+      const q       = document.getElementById('search').value.toLowerCase().trim();
+      const quarter = document.getElementById('quarter').value;
+
+      let rows = allData.filter(s => {
+        if (q) {
+          const hay = [s.parent, s.spinoff, s.parentTicker, s.spinoffTicker]
+            .filter(Boolean).join(' ').toLowerCase();
+          if (!hay.includes(q)) return false;
+        }
+        if (quarter) {
+          const mon = parseMonth(s.date);
+          if (mon !== null && Math.ceil(mon / 3) !== Number(quarter)) return false;
+        }
+        return true;
+      });
+
+      rows = sortRows(rows);
+
+      document.getElementById('count').textContent =
+        rows.length + ' spinoff' + (rows.length !== 1 ? 's' : '');
+
+      renderTable(rows);
+    }
+
+    function sortRows(rows) {
+      return [...rows].sort((a, b) => {
+        let av = sortKey === 'date' ? parseDateVal(a.date) : (a[sortKey] || '').toLowerCase();
+        let bv = sortKey === 'date' ? parseDateVal(b.date) : (b[sortKey] || '').toLowerCase();
+        if (av < bv) return sortDir === 'asc' ? -1 : 1;
+        if (av > bv) return sortDir === 'asc' ?  1 : -1;
+        return 0;
+      });
+    }
+
+    function setSort(key) {
+      sortDir = (sortKey === key && sortDir === 'asc') ? 'desc' : (key === 'date' ? 'desc' : 'asc');
+      sortKey = key;
+      applyFilters();
+    }
+
+    // ── Render ───────────────────────────────────────────────────────
+    function renderTable(rows) {
+      const dash = document.getElementById('dashboard');
+
+      if (!rows.length) {
+        dash.innerHTML = '<div class="empty-state">No spinoffs match the current filters.</div>';
+        return;
+      }
+
+      const headers = COLS.map(c => {
+        const cls = c.key === sortKey
+          ? ` class="${sortDir}"`
+          : '';
+        return `<th${cls} onclick="setSort('${c.key}')">${c.label}</th>`;
+      }).join('');
+
+      const bodyRows = rows.map(s => {
+        const parentCell = esc(s.parent || '\u2014') +
+          (s.parentTicker ? `<span class="cell-sub"><span class="badge">${esc(s.parentTicker)}</span></span>` : '');
+
+        const spinoffCell = esc(s.spinoff || '\u2014') +
+          (s.spinoffTicker ? `<span class="cell-sub"><span class="badge">${esc(s.spinoffTicker)}</span></span>` : '');
+
+        return `<tr>
+          <td style="white-space:nowrap">${esc(s.date   || '\u2014')}</td>
+          <td>${parentCell}</td>
+          <td>${spinoffCell}</td>
+          <td>${esc(s.exchange || '\u2014')}</td>
+          <td>${esc(s.ratio   || '\u2014')}</td>
+          <td>${esc(s.sector  || '\u2014')}</td>
+        </tr>`;
+      }).join('');
+
+      dash.innerHTML = `
+        <div class="table-wrap">
+          <table class="spinoffs-table">
+            <thead><tr>${headers}</tr></thead>
+            <tbody>${bodyRows}</tbody>
+          </table>
+        </div>
+        <p class="table-note">
+          Source: <a href="https://thezenofinvesting.com/recent-spinoffs/" target="_blank" rel="noopener">The Zeno of Investing</a>.
+          Informational only &mdash; not investment advice.
+        </p>`;
+    }
+
+    // ── Utilities ────────────────────────────────────────────────────
+    function esc(str) {
+      return String(str)
+        .replace(/&/g, '&amp;').replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    }
+
+    function parseDateVal(str) {
+      if (!str) return 0;
+      const d = new Date(str);
+      return isNaN(d) ? str.toLowerCase() : d.getTime();
+    }
+
+    function parseMonth(str) {
+      if (!str) return null;
+      const d = new Date(str);
+      if (!isNaN(d)) return d.getMonth() + 1;
+      const months = ['jan','feb','mar','apr','may','jun','jul','aug','sep','oct','nov','dec'];
+      const lower  = str.toLowerCase();
+      for (let i = 0; i < months.length; i++) {
+        if (lower.includes(months[i])) return i + 1;
+      }
+      return null;
+    }
+
+    load();
+  </script>
+
+</body>
+</html>
